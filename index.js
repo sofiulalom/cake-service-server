@@ -55,7 +55,18 @@ async function run(){
          res.send(result)
       })
       // orders updtate
-      
+      app.patch('/orders/:id', async(req, res)=>{
+          const id=req.params.id;
+          const status=req.body.status;
+          const query={_id: new ObjectId(id)}
+          const updtateDoc={
+              $set:{
+                 status: status ,
+              }
+          }
+          const result= await cakeOrdercollection.updateOne(query, updtateDoc);
+          res.send(result)
+      })
       // orders delete
       app.delete('/orders/:id', async(req, res)=> {
          const id =req.params.id;
