@@ -16,6 +16,22 @@ app.get('/', (req, res)=>{
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.vxj4bij.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
+// verifyjwt function 
+function verifyjwt(req, res , next){
+     const authHeaders=req.headers.authorization;
+     if(!authHeaders){
+        return res.status(401).send({message: 'unauthorized access'})
+     }
+     const token =authHeaders.split(' ')[1];
+     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err , decoded){
+         if(err){
+          return res.status(403).send({message: 'unauthorized access'})
+         }
+         req.decoded= decoded;
+         next()
+     })
+}
 async function run(){
     try{
       const cakedeliverycollection=  client.db('cakedelivery').collection('services');
@@ -23,7 +39,7 @@ async function run(){
       // jwt api 
       app.post('/jwt', (req, res)=> {
           const user=req.body;
-          const token= jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'});
+          const token= jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1d'});
           res.send({token})
       })
       // services api 
@@ -42,7 +58,11 @@ async function run(){
           res.send(service)
       });
         // order red 
-        app.get('/orders', async(req, res)=>{
+        app.get('/orders',verifyjwt, async(req, res)=>{
+           const decoded=req.decoded;
+           if(decoded.email !== req.query.email){
+              return res.status(403).send({message: 'unauthorized access'})
+           }
           
           let  query={};
           if(req.query.email){
@@ -56,13 +76,13 @@ async function run(){
         })
 
         // order api 
-     app.post('/orders', async(req, res)=>{
+     app.post('/orders',verifyjwt, async(req, res)=>{
          const order =req.body;
          const result= await cakeOrdercollection.insertOne(order)
          res.send(result)
       })
       // orders updtate
-      app.patch('/orders/:id', async(req, res)=>{
+      app.patch('/orders/:id',verifyjwt, async(req, res)=>{
           const id=req.params.id;
           const status=req.body.status;
           const query={_id: new ObjectId(id)}
@@ -75,7 +95,7 @@ async function run(){
           res.send(result)
       })
       // orders delete
-      app.delete('/orders/:id', async(req, res)=> {
+      app.delete('/orders/:id',verifyjwt, async(req, res)=> {
          const id =req.params.id;
          const query={_id: new ObjectId(id)};
          const result=await cakeOrdercollection.deleteOne(query)
