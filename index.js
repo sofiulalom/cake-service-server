@@ -46,6 +46,13 @@ async function run(){
       app.get('/services', async(req, res)=>{
          const query={};
          const cursor=  cakedeliverycollection.find(query);
+         const result=await cursor.limit(3).toArray()
+         res.send(result)
+        
+      });
+      app.get('/servicess', async(req, res)=>{
+         const query={};
+         const cursor=  cakedeliverycollection.find(query);
          const result=await cursor.toArray()
          res.send(result)
         
@@ -76,7 +83,7 @@ async function run(){
         })
 
         // order api 
-     app.post('/orders',verifyjwt, async(req, res)=>{
+     app.post('/orders', async(req, res)=>{
          const order =req.body;
          const result= await cakeOrdercollection.insertOne(order)
          res.send(result)
